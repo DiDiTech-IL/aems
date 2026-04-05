@@ -1,0 +1,27 @@
+{
+  email {$CADDY_EMAIL:admin@example.com}
+}
+
+# DOMAIN is set via environment variable in docker-compose (infra/.env).
+# Production value: api.simulance.app
+# Local / test value: :80  (plain HTTP, no TLS)
+{$DOMAIN::80} {
+  # Forward all API and WebSocket requests to the Fastify backend
+  handle /api/* {
+    reverse_proxy api:3001
+  }
+
+  # Next.js web app — only active in full-stack mode (web container running).
+  # Comment out or remove this block when Next.js is deployed on Vercel.
+  handle {
+    reverse_proxy web:3000
+  }
+
+  # Security headers
+  header {
+    X-Content-Type-Options nosniff
+    X-Frame-Options SAMEORIGIN
+    Referrer-Policy strict-origin-when-cross-origin
+    -Server
+  }
+}

@@ -1,0 +1,129 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: aems-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: aems
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: aems
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U aems -d aems"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: aems-redis
+    restart: unless-stopped
+    command: redis-server --requirepass ${REDIS_PASSWORD}
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  llama:
+    image: ghcr.io/ggml-org/llama.cpp:server
+    container_name: aems-llama
+    restart: unless-stopped
+    # network_mode: none  # enable in production for isolation
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./models:/models:ro
+    command: >
+      -m /models/qwen2.5-7b.Q4_K_M.gguf
+      --host 0.0.0.0
+      --port 8080
+      --ctx-size 4096
+      --n-predict 512
+      --threads 4
+    deploy:
+      resources:
+        limits:
+          memory: 8g
+    # NOTE: model file must be placed at infra/models/qwen2.5-7b.Q4_K_M.gguf
+
+  api:
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile.api
+    container_name: aems-api
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: "3001"
+      HOST: "0.0.0.0"
+      DATABASE_URL: postgresql://aems:${POSTGRES_PASSWORD}@postgres:5432/aems
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRY: ${JWT_EXPIRY:-8h}
+      BCRYPT_ROUNDS: ${BCRYPT_ROUNDS:-12}
+      AI_BASE_URL: http://llama:8080
+      CORS_ORIGIN: ${CORS_ORIGIN:-}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+
+  # web: runs the Next.js app server-side (full-stack Docker mode).
+  # When deploying Next.js on Vercel, remove or skip this service.
+  # Start with profile:  docker compose --profile full-stack up
+  web:
+    profiles: ["full-stack"]
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile.web
+    container_name: aems-web
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      # API_INTERNAL_URL is used by Server Components / Server Actions (server-to-server)
+      API_INTERNAL_URL: http://api:3001
+      # NEXT_PUBLIC_* are baked in at build time — pass them as build args (see Dockerfile.web)
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://api:3001}
+      NEXT_PUBLIC_WS_URL: ${NEXT_PUBLIC_WS_URL:-ws://api:3001}
+    depends_on:
+      - api
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: aems-caddy
+    restart: unless-stopped
+    environment:
+      # DOMAIN controls the site address Caddy binds to.
+      # Set to ':80' for HTTP-only, or 'api.yourdomain.com' for automatic HTTPS.
+      DOMAIN: ${DOMAIN:-:80}
+      CADDY_EMAIL: ${CADDY_EMAIL:-admin@example.com}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - api
+      # web is optional (full-stack profile only)
+
+volumes:
+  postgres_data:
+  redis_data:
+  caddy_data:
+  caddy_config:

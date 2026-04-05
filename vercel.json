@@ -1,0 +1,8 @@
+{
+  "buildCommand": "npm run build --workspace=@aems/shared-types && npm run build --workspace=@aems/web",
+  "outputDirectory": "apps/web/.next",
+  "installCommand": "npm install",
+  "framework": "nextjs",
+  "ignoreCommand": "git diff HEAD^ HEAD --quiet -- apps/web packages/shared-types",
+  "alias": ["simulance.app", "www.simulance.app"]
+}

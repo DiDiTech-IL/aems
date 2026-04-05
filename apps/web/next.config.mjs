@@ -3,13 +3,6 @@
 // Standalone mode is only used for self-hosted Docker deployments.
 const nextConfig = {
   ...(process.env.VERCEL ? {} : { output: 'standalone' }),
-  // Turbopack: map .js imports to .ts/.tsx so ESM-style ".js" extensions resolve.
-  turbopack: {
-    extensionAlias: {
-      '.js': ['.js', '.ts', '.tsx'],
-      '.jsx': ['.jsx', '.tsx'],
-    },
-  },
   // dev (localhost:3001) and production (behind Caddy at /api)
   async rewrites() {
     return [

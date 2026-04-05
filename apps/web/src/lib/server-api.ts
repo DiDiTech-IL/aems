@@ -14,18 +14,35 @@ async function serverFetch<T>(path: string, init: RequestInit = {}): Promise<T> 
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
   };
 
-  const res = await fetch(`${API_INTERNAL}/api/v1${path}`, {
-    ...init,
-    headers,
-    cache: 'no-store',
-  });
+  try {
+    const res = await fetch(`${API_INTERNAL}/api/v1${path}`, {
+      ...init,
+      headers,
+      cache: 'no-store',
+    });
 
-  if (!res.ok) {
-    throw new Error(`[server-api] ${res.status} ${path}`);
+    if (!res.ok) {
+      throw new Error(`[server-api] ${res.status} ${path}`);
+    }
+
+    if (res.status === 204) return undefined as T;
+    return (await res.json()) as T;
+  } catch (err: any) {
+    if (err.name === 'TypeError' && err.message === 'fetch failed') {
+      console.error(`[server-api] API unreachable at ${API_INTERNAL}. Is the API server running?`);
+      
+      // Provide graceful fallbacks for common routes when dev server API is offline.
+      if (path === '/analytics/summary') {
+        return { total: 0, completed: 0, aborted: 0 } as unknown as T;
+      }
+      if (path.startsWith('/simulations') || path.startsWith('/cases') || path.startsWith('/protocols')) {
+        return { data: [], cases: [], protocols: [] } as unknown as T;
+      }
+      
+      throw new Error('API is currently unreachable.');
+    }
+    throw err;
   }
-
-  if (res.status === 204) return undefined as T;
-  return res.json() as Promise<T>;
 }
 
 export interface SimulationRunDetail {

@@ -7,7 +7,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "dev": "node --watch --experimental-specifier-resolution=node dist/index.js",
+    "dev": "node --env-file=.env --watch --experimental-specifier-resolution=node dist/index.js",
     "start": "node dist/index.js",
     "clean": "rm -rf dist"
   },

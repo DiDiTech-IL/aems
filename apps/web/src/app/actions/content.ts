@@ -12,15 +12,24 @@ async function apiFetch(
   const cookieStore = await cookies();
   const token = cookieStore.get('aems_token')?.value;
 
-  const res = await fetch(`${API_URL}/api/v1${path}`, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...(options.headers as Record<string, string> | undefined),
-    },
-    cache: 'no-store',
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${API_URL}/api/v1${path}`, {
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...(options.headers as Record<string, string> | undefined),
+      },
+      cache: 'no-store',
+    });
+  } catch (err: any) {
+    if (err.name === 'TypeError' && err.message === 'fetch failed') {
+      console.error(`[actions] API unreachable at ${API_URL}`);
+      return { ok: false, status: 503, body: { error: 'API is currently unreachable.' } };
+    }
+    throw err;
+  }
 
   if (res.status === 204) return { ok: true, status: 204, body: null };
   const body = await res.json().catch(() => null);

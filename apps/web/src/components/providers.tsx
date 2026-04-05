@@ -1,7 +1,21 @@
-// Providers shell — add global client-side context providers here as needed.
-// Currently empty since React 19 Server Components handle data fetching
-// and cookie-based auth removes the need for a client auth store.
+'use client';
+
+import { ClerkProvider } from '@clerk/nextjs';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { useState } from 'react';
+
 export function Providers({ children }: { children: React.ReactNode }) {
-  return <>{children}</>;
+  const [queryClient] = useState(
+    () =>
+      new QueryClient({
+        defaultOptions: { queries: { staleTime: 60_000, retry: 1 } },
+      }),
+  );
+
+  return (
+    <ClerkProvider>
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    </ClerkProvider>
+  );
 }
 

@@ -2,7 +2,7 @@
 
 import { use, useOptimistic, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { useSimulation } from '../../../hooks/use-simulation';
+import { useSimulation } from '@/../hooks/use-simulation';
 
 // ─── Vital display ────────────────────────────────────────────────────────────
 

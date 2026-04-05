@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { StubAiClient } from '@aems/ai-client';
 import type { JwtPayload } from '@aems/shared-types';
 import { processAction, loadState } from '../../simulation/engine.js';
+import { authenticate } from '../../middleware/auth.js';
 
 // ─── Message schemas ──────────────────────────────────────────────────────────
 
@@ -66,10 +67,15 @@ export const simulationWsPlugin: FastifyPluginAsync = async (fastify) => {
     '/simulations/:runId/ws',
     { websocket: true },
     async (socket: WebSocket, req: FastifyRequest<{ Params: { runId: string } }>) => {
-      // 1. Authenticate — JWT must be passed as ?token= or Authorization header
+      // 1. Authenticate — Clerk JWT must be passed as ?token= or Authorization header
       let user: JwtPayload;
       try {
-        await req.jwtVerify();
+        // Reuse the shared authenticate preHandler; it sets req.user or replies 401
+        const mockReply = {
+          code: (_n: number) => mockReply,
+          send: (_b: unknown) => { throw new Error('UNAUTHENTICATED'); },
+        } as unknown as import('fastify').FastifyReply;
+        await authenticate(req, mockReply);
         user = req.user;
       } catch {
         sendError(socket, 'UNAUTHENTICATED', 'Invalid or missing token.');

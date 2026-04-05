@@ -8,6 +8,13 @@
       "when": 1775408315048,
       "tag": "0000_wild_ultimates",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1775408315049,
+      "tag": "0001_clerk_auth",
+      "breakpoints": true
     }
   ]
 }

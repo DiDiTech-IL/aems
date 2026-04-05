@@ -6,9 +6,9 @@ const EnvSchema = z.object({
   HOST: z.string().default('0.0.0.0'),
   DATABASE_URL: z.string().min(1),
   REDIS_URL: z.string().min(1),
-  JWT_SECRET: z.string().min(32),
-  JWT_EXPIRY: z.string().default('8h'),
-  BCRYPT_ROUNDS: z.coerce.number().int().min(10).max(14).default(12),
+  // Clerk auth — obtain from https://dashboard.clerk.com
+  CLERK_SECRET_KEY: z.string().min(1),
+  CLERK_WEBHOOK_SECRET: z.string().min(1),
   AI_BASE_URL: z.string().url().optional(),
   CORS_ORIGIN: z.string().optional(),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).default('info'),

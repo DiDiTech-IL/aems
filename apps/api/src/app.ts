@@ -1,5 +1,4 @@
 import Fastify from 'fastify';
-import fastifyJwt from '@fastify/jwt';
 import fastifyWebsocket from '@fastify/websocket';
 import fastifyCors from '@fastify/cors';
 import fastifyHelmet from '@fastify/helmet';
@@ -9,6 +8,7 @@ import { env } from './env.js';
 
 // Routes
 import { authRoutes } from './routes/auth.js';
+import { webhookRoutes } from './routes/webhooks.js';
 import { protocolRoutes } from './routes/protocols.js';
 import { caseRoutes } from './routes/cases.js';
 import { simulationsRestPlugin } from './routes/simulations/rest.js';
@@ -29,12 +29,6 @@ export async function buildApp() {
   });
 
   await app.register(fastifyCors, {
-    // In production, restrict to the explicit CORS_ORIGIN env var (e.g. the Vercel URL).
-    // All browser → API requests go through the Next.js rewrite proxy (same-origin),
-    // so the only direct cross-origin traffic is the simulation WebSocket.
-    // WebSocket connections are not subject to the browser's CORS policy, so 'false'
-    // (no CORS headers on HTTP requests) is safe for same-domain deployments.
-    // Set CORS_ORIGIN to your Vercel URL if you need cross-origin REST calls.
     origin:
       env.NODE_ENV === 'production'
         ? (env.CORS_ORIGIN ? env.CORS_ORIGIN : false)
@@ -51,33 +45,12 @@ export async function buildApp() {
       req.ip,
   });
 
-  // ─── Auth plugin ────────────────────────────────────────────────────────────
-  await app.register(fastifyJwt, {
-    secret: env.JWT_SECRET,
-    sign: { algorithm: 'HS256', expiresIn: '8h' },
-    // Allow passing token via ?token= query param for WebSocket handshake
-    decode: { complete: true },
-    messages: {
-      badRequestErrorMessage: 'Format is Authorization: Bearer [token]',
-      noAuthorizationInHeaderMessage: 'Authorisation header is missing.',
-      authorizationTokenExpiredMessage: 'Authorisation token has expired.',
-      authorizationTokenInvalid: (err) => `Authorisation token is invalid: ${err.message}`,
-    },
-  });
-
-  // Expose JWT token from query string for WebSocket routes
-  app.addHook('onRequest', async (req) => {
-    const token = (req.query as Record<string, string>)['token'];
-    if (token && !req.headers.authorization) {
-      req.headers.authorization = `Bearer ${token}`;
-    }
-  });
-
   // ─── WebSocket plugin ───────────────────────────────────────────────────────
   await app.register(fastifyWebsocket);
 
   // ─── Routes ─────────────────────────────────────────────────────────────────
   await app.register(authRoutes, { prefix: '/api/v1/auth' });
+  await app.register(webhookRoutes, { prefix: '/api/v1' });
   await app.register(protocolRoutes, { prefix: '/api/v1/protocols' });
   await app.register(caseRoutes, { prefix: '/api/v1/cases' });
   await app.register(simulationsRestPlugin, { prefix: '/api/v1' });

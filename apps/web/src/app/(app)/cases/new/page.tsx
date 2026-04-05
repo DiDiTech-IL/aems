@@ -1,6 +1,6 @@
 import { Suspense } from 'react';
-import { serverApi } from '../../../lib/server-api';
-import { CreateCaseForm } from '../../../components/create-case-form';
+import { serverApi } from '@/../lib/server-api';
+import { CreateCaseForm } from '@/../components/create-case-form';
 
 async function ProtocolLoader() {
   const { protocols } = await serverApi.protocols.list({ status: 'published' });

@@ -1,5 +1,5 @@
 import { use } from 'react';
-import { serverApi, type SimulationRunDetail } from '../../../../lib/server-api';
+import { serverApi, type SimulationRunDetail } from '@/@/lib/server-api';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 

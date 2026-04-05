@@ -1,27 +1,29 @@
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
+import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server';
 
-const PROTECTED_PREFIXES = ['/dashboard', '/simulate'];
+const isProtectedRoute = createRouteMatcher([
+  '/dashboard(.*)',
+  '/simulate(.*)',
+  '/cases(.*)',
+  '/protocols(.*)',
+  '/analytics(.*)',
+]);
 
-export function proxy(request: NextRequest) {
-  const token = request.cookies.get('aems_token')?.value;
-  const { pathname } = request.nextUrl;
-
-  const isProtected = PROTECTED_PREFIXES.some((p) => pathname.startsWith(p));
-
-  if (isProtected && !token) {
-    const loginUrl = new URL('/login', request.url);
-    loginUrl.searchParams.set('from', pathname);
-    return NextResponse.redirect(loginUrl);
+/**
+ * Clerk middleware — handles auth for every request.
+ * Protected routes redirect to Clerk's sign-in page when the user is not authenticated.
+ * Public routes (/, /login, /sign-in, static assets) pass through freely.
+ */
+export default clerkMiddleware(async (auth, request) => {
+  if (isProtectedRoute(request)) {
+    await auth.protect();
   }
-
-  if (pathname === '/login' && token) {
-    return NextResponse.redirect(new URL('/dashboard', request.url));
-  }
-
-  return NextResponse.next();
-}
+});
 
 export const config = {
-  matcher: ['/dashboard/:path*', '/simulate/:path*', '/login'],
+  matcher: [
+    // Skip Next.js internals and static files
+    '/((?!_next|[^?]*\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)',
+    // Always run for API routes
+    '/(api|trpc)(.*)',
+  ],
 };

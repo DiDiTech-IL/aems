@@ -25,11 +25,13 @@ export const simulationOutcomeEnum = pgEnum('simulation_outcome', [
 ]);
 
 // ─── Users ───────────────────────────────────────────────────────────────────
+// Shadow table — Clerk is the authority for identity.
+// id = Clerk user ID (e.g. "user_2abc123xyz"), synced via webhook on user.created.
+// role is updated via organizationMembership.created / .updated webhook events.
 
 export const users = pgTable('users', {
-  id: uuid('id').primaryKey().defaultRandom(),
+  id: varchar('id', { length: 255 }).primaryKey(), // Clerk user ID
   email: varchar('email', { length: 255 }).notNull().unique(),
-  passwordHash: varchar('password_hash', { length: 255 }).notNull(),
   role: rbacRoleEnum('role').notNull().default('trainee'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
@@ -44,7 +46,7 @@ export const protocolTemplates = pgTable('protocol_templates', {
   status: protocolStatusEnum('status').notNull().default('draft'),
   careLevel: careLevelEnum('care_level').notNull(),
   phases: jsonb('phases').notNull(),
-  createdBy: uuid('created_by')
+  createdBy: varchar('created_by', { length: 255 })
     .notNull()
     .references(() => users.id),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
@@ -64,7 +66,7 @@ export const caseTemplates = pgTable('case_templates', {
   initialPatientState: jsonb('initial_patient_state').notNull(),
   allowedProtocolIds: jsonb('allowed_protocol_ids').notNull().$type<string[]>(),
   rules: jsonb('rules').notNull().$type<unknown[]>(),
-  createdBy: uuid('created_by')
+  createdBy: varchar('created_by', { length: 255 })
     .notNull()
     .references(() => users.id),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
@@ -83,10 +85,10 @@ export const simulationRuns = pgTable('simulation_runs', {
     .notNull()
     .references(() => protocolTemplates.id),
   protocolTemplateVersion: varchar('protocol_template_version', { length: 20 }).notNull(),
-  traineeId: uuid('trainee_id')
+  traineeId: varchar('trainee_id', { length: 255 })
     .notNull()
     .references(() => users.id),
-  instructorId: uuid('instructor_id').references(() => users.id),
+  instructorId: varchar('instructor_id', { length: 255 }).references(() => users.id),
   status: simulationStatusEnum('status').notNull().default('pending'),
   difficultyLevel: integer('difficulty_level').notNull().default(1),
   currentPatientState: jsonb('current_patient_state').notNull(),
@@ -115,10 +117,11 @@ export const simulationEvents = pgTable('simulation_events', {
 
 export const auditLog = pgTable('audit_log', {
   id: uuid('id').primaryKey().defaultRandom(),
-  actorId: uuid('actor_id').references(() => users.id),
+  actorId: varchar('actor_id', { length: 255 }).references(() => users.id),
   action: varchar('action', { length: 255 }).notNull(),
   resourceType: varchar('resource_type', { length: 64 }).notNull(),
   resourceId: uuid('resource_id').notNull(),
   diff: jsonb('diff'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
+

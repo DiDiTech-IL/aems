@@ -1,10 +1,12 @@
-import { cookies } from 'next/headers';
+import { auth } from '@clerk/nextjs/server';
 
 const API_INTERNAL = process.env['API_INTERNAL_URL'] ?? 'http://localhost:3001';
 
 async function serverFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
-  const cookieStore = await cookies();
-  const token = cookieStore.get('aems_token')?.value;
+  // Use Clerk's server auth helper to get the current session token.
+  // This works in Server Components, Server Actions, and Route Handlers.
+  const { getToken } = await auth();
+  const token = await getToken();
 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -81,6 +83,10 @@ export interface CaseRowFull extends CaseRow {
 }
 
 export const serverApi = {
+  auth: {
+    me: () =>
+      serverFetch<{ user: { id: string; email: string; role: string } }>('/auth/me'),
+  },
   simulations: {
     list: (params?: { status?: string }) => {
       const qs = params ? `?${new URLSearchParams(params as Record<string, string>)}` : '';

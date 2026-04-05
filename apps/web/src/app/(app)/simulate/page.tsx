@@ -1,6 +1,6 @@
 import { Suspense } from 'react';
-import { serverApi } from '../../lib/server-api';
-import { StartSimulationForm } from '../../components/start-simulation-form';
+import { serverApi } from '@/lib/server-api';
+import { StartSimulationForm } from '@/components/start-simulation-form';
 
 // ─── Async loader (server-rendered, passes serialised props to Client Component)
 

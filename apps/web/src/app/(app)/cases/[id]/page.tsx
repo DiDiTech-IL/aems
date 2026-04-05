@@ -1,17 +1,6 @@
 import { use } from 'react';
-import { cookies } from 'next/headers';
-import { serverApi } from '../../../lib/server-api';
-import { PublishCaseForm } from '../../../components/publish-case-form';
-
-function decodeRole(token: string): string {
-  try {
-    const payload = token.split('.')[1];
-    const decoded = JSON.parse(Buffer.from(payload!, 'base64url').toString()) as { role?: string };
-    return decoded.role ?? '';
-  } catch {
-    return '';
-  }
-}
+import { serverApi } from '@/../lib/server-api';
+import { PublishCaseForm } from '@/../components/publish-case-form';
 
 function StatusBadge({ status }: { status: string }) {
   const map: Record<string, string> = {
@@ -34,10 +23,11 @@ export default async function CaseDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = use(params);
-  const [cookieStore, caseData] = await Promise.all([cookies(), serverApi.cases.get(id)]);
-  const token = cookieStore.get('aems_token')?.value ?? '';
-  const role = decodeRole(token);
-  const isAdmin = role === 'admin';
+  const [{ user }, caseData] = await Promise.all([
+    serverApi.auth.me(),
+    serverApi.cases.get(id),
+  ]);
+  const isAdmin = user.role === 'admin';
 
   return (
     <main className="min-h-screen p-6">

@@ -1,18 +1,5 @@
 import { Suspense } from 'react';
-import { cookies } from 'next/headers';
-import { serverApi, type CaseRow } from '../../lib/server-api';
-
-function decodeRole(token: string): string {
-  try {
-    const payload = token.split('.')[1];
-    const decoded = JSON.parse(
-      Buffer.from(payload!, 'base64url').toString(),
-    ) as { role?: string };
-    return decoded.role ?? '';
-  } catch {
-    return '';
-  }
-}
+import { serverApi, type CaseRow } from '@/lib/server-api';
 
 function StatusBadge({ status }: { status: string }) {
   const map: Record<string, string> = {
@@ -91,10 +78,8 @@ function ListSkeleton() {
 }
 
 export default async function CasesPage() {
-  const cookieStore = await cookies();
-  const token = cookieStore.get('aems_token')?.value ?? '';
-  const role = decodeRole(token);
-  const canCreate = role === 'admin' || role === 'instructor';
+  const { user } = await serverApi.auth.me();
+  const canCreate = user.role === 'admin' || user.role === 'instructor';
 
   return (
     <main className="min-h-screen p-6">

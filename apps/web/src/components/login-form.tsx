@@ -1,58 +1,36 @@
 'use client';
 
-import { useActionState } from 'react';
-import { useFormStatus } from 'react-dom';
-import { loginAction, type LoginFormState } from '../app/actions/auth';
+import { SignIn } from '@clerk/nextjs';
 
-const INITIAL_STATE: LoginFormState = { error: null };
-
-function SubmitButton() {
-  const { pending } = useFormStatus();
-  return (
-    <button
-      type="submit"
-      disabled={pending}
-      className="mt-2 rounded-lg bg-blue-600 py-2 font-semibold hover:bg-blue-500 disabled:opacity-50 transition-colors"
-    >
-      {pending ? 'Signing in…' : 'Sign in'}
-    </button>
-  );
-}
-
+/**
+ * Clerk-managed sign-in component.
+ * Handles email/password, magic links, OAuth, and MFA out of the box.
+ * After sign-in, Clerk redirects to /dashboard (configured via afterSignInUrl).
+ */
 export function LoginForm() {
-  const [state, action] = useActionState(loginAction, INITIAL_STATE);
-
   return (
-    <form action={action} className="flex flex-col gap-4">
-      <label className="flex flex-col gap-1">
-        <span className="text-sm text-gray-400">Email</span>
-        <input
-          type="email"
-          name="email"
-          autoComplete="email"
-          required
-          className="rounded-lg border border-gray-600 bg-gray-800 px-3 py-2 focus:border-blue-500 focus:outline-none"
-        />
-      </label>
-
-      <label className="flex flex-col gap-1">
-        <span className="text-sm text-gray-400">Password</span>
-        <input
-          type="password"
-          name="password"
-          autoComplete="current-password"
-          required
-          className="rounded-lg border border-gray-600 bg-gray-800 px-3 py-2 focus:border-blue-500 focus:outline-none"
-        />
-      </label>
-
-      {state?.error && (
-        <p role="alert" className="text-sm text-red-400">
-          {state.error}
-        </p>
-      )}
-
-      <SubmitButton />
-    </form>
+    <SignIn
+      routing="hash"
+      forceRedirectUrl="/dashboard"
+      appearance={{
+        elements: {
+          rootBox: 'w-full',
+          card: 'bg-transparent shadow-none p-0',
+          headerTitle: 'hidden',
+          headerSubtitle: 'hidden',
+          socialButtonsBlockButton:
+            'border border-gray-700 bg-gray-800 hover:bg-gray-700 text-gray-200',
+          formButtonPrimary:
+            'bg-blue-600 hover:bg-blue-500 text-white rounded-lg',
+          formFieldInput:
+            'rounded-lg border border-gray-600 bg-gray-800 text-gray-100 focus:border-blue-500',
+          formFieldLabel: 'text-gray-400 text-sm',
+          footerActionLink: 'text-blue-400 hover:text-blue-300',
+          identityPreviewEditButton: 'text-blue-400',
+          dividerLine: 'bg-gray-700',
+          dividerText: 'text-gray-500',
+        },
+      }}
+    />
   );
 }

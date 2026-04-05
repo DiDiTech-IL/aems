@@ -1,17 +1,6 @@
 import { use } from 'react';
-import { cookies } from 'next/headers';
-import { serverApi } from '../../../lib/server-api';
-import { PublishProtocolForm } from '../../../components/publish-protocol-form';
-
-function decodeRole(token: string): string {
-  try {
-    const payload = token.split('.')[1];
-    const decoded = JSON.parse(Buffer.from(payload!, 'base64url').toString()) as { role?: string };
-    return decoded.role ?? '';
-  } catch {
-    return '';
-  }
-}
+import { serverApi } from '@/../lib/server-api';
+import { PublishProtocolForm } from '@/../components/publish-protocol-form';
 
 function StatusBadge({ status }: { status: string }) {
   const map: Record<string, string> = {
@@ -34,10 +23,11 @@ export default async function ProtocolDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = use(params);
-  const [cookieStore, protocol] = await Promise.all([cookies(), serverApi.protocols.get(id)]);
-  const token = cookieStore.get('aems_token')?.value ?? '';
-  const role = decodeRole(token);
-  const isAdmin = role === 'admin';
+  const [{ user }, protocol] = await Promise.all([
+    serverApi.auth.me(),
+    serverApi.protocols.get(id),
+  ]);
+  const isAdmin = user.role === 'admin';
 
   return (
     <main className="min-h-screen p-6">

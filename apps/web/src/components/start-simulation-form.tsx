@@ -2,23 +2,18 @@
 
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@clerk/nextjs';
 
 interface Props {
   cases: Array<{ id: string; name: string }>;
   protocols: Array<{ id: string; name: string }>;
 }
 
-// Reads the JWT from the non-httpOnly cookie set by loginAction.
-function getTokenFromCookie(): string {
-  const match = document.cookie.match(/(?:^|;\s*)aems_token=([^;]*)/);
-  return match ? decodeURIComponent(match[1]!) : '';
-}
-
 // Client Component — only interactive selections and the start mutation live here.
 // Cases and protocols arrive as serialised props from the Server Component above it.
-// useTransition covers the pending state without any synthetic loading state variable.
 export function StartSimulationForm({ cases, protocols }: Props) {
   const router = useRouter();
+  const { getToken } = useAuth();
   const [isPending, startTransition] = useTransition();
   const [selectedCase, setSelectedCase] = useState('');
   const [selectedProtocol, setSelectedProtocol] = useState('');
@@ -31,7 +26,7 @@ export function StartSimulationForm({ cases, protocols }: Props) {
 
     startTransition(async () => {
       try {
-        const token = getTokenFromCookie();
+        const token = await getToken();
         const res = await fetch('/api/v1/simulations', {
           method: 'POST',
           headers: {

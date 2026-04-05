@@ -92,7 +92,7 @@ export const serverApi = {
   },
   analytics: {
     summary: () =>
-      serverFetch<{ total: number; completed: number; aborted: number }>('/analytics/me/summary'),
+      serverFetch<{ total: number; completed: number; aborted: number }>('/analytics/summary'),
   },
   cases: {
     list: (params?: { status?: string }) => {

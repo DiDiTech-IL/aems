@@ -77,9 +77,9 @@ export async function buildApp() {
   await app.register(fastifyWebsocket);
 
   // ─── Routes ─────────────────────────────────────────────────────────────────
-  await app.register(authRoutes, { prefix: '/api/v1' });
-  await app.register(protocolRoutes, { prefix: '/api/v1' });
-  await app.register(caseRoutes, { prefix: '/api/v1' });
+  await app.register(authRoutes, { prefix: '/api/v1/auth' });
+  await app.register(protocolRoutes, { prefix: '/api/v1/protocols' });
+  await app.register(caseRoutes, { prefix: '/api/v1/cases' });
   await app.register(simulationsRestPlugin, { prefix: '/api/v1' });
   await app.register(simulationWsPlugin, { prefix: '/api/v1' });
   await app.register(analyticsPlugin, { prefix: '/api/v1' });
